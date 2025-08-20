@@ -5,4 +5,4 @@ langchain-core
 langchain-openai
 langchain-text-splitters
 numexpr
-chromadb
+chromadb==0.3.29
