@@ -5,4 +5,5 @@ langchain-core
 langchain-openai
 langchain-text-splitters
 numexpr
+faiss-cpu
 chromadb>=0.5.3
