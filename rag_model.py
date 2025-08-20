@@ -10,6 +10,8 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.docstore.document import Document
 import streamlit as st
 
+os.environ["CHROMA_DB_IMPL"] = "duckdb+parquet"
+
 
 # === GitHub Models (OpenAI-compatible) ===
 ENDPOINT = "https://models.inference.ai.azure.com"   # GitHub Models endpoint
