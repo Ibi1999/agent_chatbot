@@ -1,0 +1,4 @@
+1. Pull embded model ollama pull nomic-embed-text
+2. Put context in documents folder (PDFs Only)
+3. python rag_model.py to create the DB
+4. streamlit run frontend.py to start the app
