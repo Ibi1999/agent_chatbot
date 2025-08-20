@@ -2,6 +2,7 @@
 import os
 import re
 import pandas as pd
+import chromadb
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
@@ -10,12 +11,10 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.docstore.document import Document
 import streamlit as st
 
-os.environ["CHROMA_DB_IMPL"] = "duckdb+parquet"
-
-
 # === GitHub Models (OpenAI-compatible) ===
 ENDPOINT = "https://models.inference.ai.azure.com"   # GitHub Models endpoint
-GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN") or st.secrets.get("GITHUB_TOKEN")
+
 if not GITHUB_TOKEN:
     raise RuntimeError("GITHUB_TOKEN is not set. Define it in your environment.")
 
@@ -24,7 +23,8 @@ EMBED_MODEL = os.getenv("GHM_EMBED", "text-embedding-3-small")
 
 # === Paths ===
 DOCS_DIR = "documents"
-PERSIST_DIR = "rag_chroma_db"  # delete & rebuild if switching from any other embedding family
+PERSIST_DIR = "rag_chroma_db"   # Chroma DB directory
+COLLECTION = "ibrahim_docs"
 
 # === Clean up raw text from PDFs and CSVs ===
 def clean_text(text: str) -> str:
@@ -68,19 +68,22 @@ def create_vector_store():
     docs = load_and_clean_documents(DOCS_DIR)
     chunks = split_documents(docs)
 
-    # Use OpenAIEmbeddings but point it at GitHub Models via base_url + api_key
     embeddings = OpenAIEmbeddings(
         model=EMBED_MODEL,
         api_key=GITHUB_TOKEN,
         base_url=ENDPOINT,
     )
 
+    # New Chroma client
+    chroma_client = chromadb.PersistentClient(path=PERSIST_DIR)
+
     vectorstore = Chroma.from_documents(
         documents=chunks,
         embedding=embeddings,
-        persist_directory=PERSIST_DIR
+        client=chroma_client,
+        collection_name=COLLECTION,
     )
-    vectorstore.persist()
+
     print(f"[✅] Indexed {len(chunks)} chunks from {len(docs)} documents.")
     print(f"[💾] Chroma DB saved to: {PERSIST_DIR}")
 
@@ -93,9 +96,13 @@ def get_rag_response(query: str, chat_history=None):
             api_key=GITHUB_TOKEN,
             base_url=ENDPOINT,
         )
+
+        chroma_client = chromadb.PersistentClient(path=PERSIST_DIR)
+
         get_rag_response.vectordb = Chroma(
-            persist_directory=PERSIST_DIR,
-            embedding_function=get_rag_response.embedding_model
+            client=chroma_client,
+            collection_name=COLLECTION,
+            embedding_function=get_rag_response.embedding_model,
         )
         get_rag_response.retriever = get_rag_response.vectordb.as_retriever()
 
@@ -105,7 +112,6 @@ def get_rag_response(query: str, chat_history=None):
             temperature=0.2,
             api_key=GITHUB_TOKEN,
             base_url=ENDPOINT,
-            # timeout=60, max_retries=2,  # optional hardening
         )
 
     retriever = get_rag_response.retriever
@@ -122,9 +128,10 @@ def get_rag_response(query: str, chat_history=None):
 
     custom_prompt = (
         "You are a helpful assistant trained on Ibrahim's work and project documents and anything related to him.\n"
-        "If the user asks a vague question, kindly guide them to ask about him or his work work in data Analysis, based on his projects.\n\n"
+        "If the user asks a vague question, kindly guide them to ask about him or his work in data analysis, based on his projects.\n\n"
         f"User query: {query}"
     )
+
     qa_chain = RetrievalQA.from_chain_type(
         llm=llm,
         retriever=retriever,
@@ -137,7 +144,7 @@ def get_rag_response(query: str, chat_history=None):
 
     if not source_docs or "you didn't ask a question" in answer.lower():
         fallback = (
-            "Hi there! I'm here to help answer questions based on Ibrahim's work and project documents."
+            "Hi there! I'm here to help answer questions based on Ibrahim's work and project documents. "
             "Try asking me about his football clustering models, prediction systems, or any other data science work!"
         )
         return fallback, []
