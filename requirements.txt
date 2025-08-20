@@ -5,3 +5,4 @@ langchain-core
 langchain-openai
 langchain-text-splitters
 numexpr
+chromadb
