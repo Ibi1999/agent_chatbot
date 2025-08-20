@@ -7,10 +7,11 @@ from rag_model import get_rag_response
 
 from langchain_openai import ChatOpenAI
 from langchain.schema import SystemMessage, HumanMessage, AIMessage
+import streamlit as st
 
 # === GitHub Models (OpenAI-compatible) ===
 ENDPOINT = "https://models.inference.ai.azure.com"
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
 if not GITHUB_TOKEN:
     raise RuntimeError("GITHUB_TOKEN is not set. Define it in your environment.")
 

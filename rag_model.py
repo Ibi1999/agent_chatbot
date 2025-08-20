@@ -8,10 +8,12 @@ from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.chains import RetrievalQA
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.docstore.document import Document
+import streamlit as st
+
 
 # === GitHub Models (OpenAI-compatible) ===
 ENDPOINT = "https://models.inference.ai.azure.com"   # GitHub Models endpoint
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
 if not GITHUB_TOKEN:
     raise RuntimeError("GITHUB_TOKEN is not set. Define it in your environment.")
 

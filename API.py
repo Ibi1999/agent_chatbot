@@ -3,13 +3,15 @@ import os
 from azure.ai.inference import ChatCompletionsClient
 from azure.ai.inference.models import SystemMessage, UserMessage
 from azure.core.credentials import AzureKeyCredential
+import streamlit as st
+
 
 # 1) Use the GitHub Models endpoint (per MS docs)
 ENDPOINT = "https://models.inference.ai.azure.com"
 # (Org-specific endpoint also exists: "https://models.github.ai/inference")
 
 # 2) Set an environment variable named GITHUB_TOKEN (see steps below)
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
 if not GITHUB_TOKEN:
     raise RuntimeError("GITHUB_TOKEN is not set. Define it in your environment.")
 
